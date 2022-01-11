@@ -152,6 +152,17 @@ let system_ok ~err commandline =
   in
   if not ok then raise (Echec (err, log))
 
+let outok_re = Str.regexp "=> 1"
+
+let system_check ~err commandline =
+  let r, log = run_command commandline in
+  let ok = match r with
+           | Unix.WEXITED rc -> rc = 0
+           | Unix.WSIGNALED s | Unix.WSTOPPED s -> false
+  in
+  if not (ok && List.for_all (fun s -> Str.string_match outok_re s 0) log)
+  then raise (Echec (err, log))
+
 let test_c eptpath base_f () =
   List.iter (fun f ->
     system_ok ~err:"C compilation failed."
@@ -161,11 +172,9 @@ let test_c eptpath base_f () =
   in
   if assert_node <> None || main_node then begin
     system_ok ~err:"Link failure." (sprintf "%s *.o -o %s 2>&1" cc base_f);
-    match assert_node with
-    | None -> ()
-    | Some step_count ->
-        system_ok ~err:"Run-time assertion failure."
-                  (sprintf "%s %s >/dev/null 2>&1" base_f step_count)
+    let step_count = 10 in
+    system_check ~err:"Run-time assertion failure."
+                 (sprintf "./%s %d >/dev/null 2>&1" base_f step_count)
   end
 
 let test_good f =
