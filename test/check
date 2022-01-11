@@ -32,6 +32,15 @@ let verbose = ref false
 let printf = Printf.printf
 let sprintf = Printf.sprintf
 
+let red = ref "\x1B[31m"
+let blue = ref "\x1B[34m"
+let reset = ref "\x1B[0m"
+
+let deactivate_colors () =
+  red := "";
+  blue := "";
+  reset := ""
+
 let process_lines in_ch process =
   let rec read_line n =
     try
@@ -59,6 +68,28 @@ let get_file_info filename =
   process_lines (open_in filename) process_line;
   info
 
+let slurp ich =
+  let rec read buf =
+    match input_line ich with
+    | s -> read (s::buf)
+    | exception End_of_file -> List.rev buf
+  in
+  read []
+
+let try_finalize f x finally y =
+  let res = try f x with exn -> finally y; raise exn in
+  finally y;
+  res
+
+let dump_to_file filename buf =
+  let och = open_out filename in
+  try_finalize (List.iter (output_string och)) buf close_out och
+
+let run_command commandline =
+  let ich = Unix.open_process_in commandline in
+  let log = slurp ich in
+  Unix.close_process_in ich, log
+
 let compile filename testbad =
   let info = get_file_info filename in
   let args_comp = String.concat " " (List.filter_map Fun.id [
@@ -67,30 +98,21 @@ let compile filename testbad =
       if info.main_node then Some "-s main" else None;
     ])
   in
-  let logfile =
-    if !verbose then
-      " >" ^ Filename.(remove_extension (basename filename)) ^ ".log"
-    else if testbad then " >/dev/null"
-    else ""
-  in
-  let commandline = sprintf "%s %s -I good %s %s%s 2>&1"
-                            !compilo !coption args_comp filename logfile
+  let commandline = sprintf "%s %s -I good %s %s 2>&1"
+                            !compilo !coption args_comp filename
   in
   if !verbose then printf "Compile: %s\n%!" commandline;
-  (match Unix.system commandline with
-   | Unix.WEXITED rc -> rc = 0
-   | Unix.WSIGNALED s | Unix.WSTOPPED s -> false)
+  let r, log = run_command commandline in
+  dump_to_file Filename.((remove_extension (basename filename)) ^ ".log") log;
+  (match r with
+   | Unix.WEXITED rc -> rc = 0, log
+   | Unix.WSIGNALED s | Unix.WSTOPPED s -> false, log)
 
 let dir_exists path =
   match Unix.stat path with
   | Unix.{ st_kind = S_DIR; _ } -> true
   | _ -> failwith (sprintf "%s is not a directory" path)
   | exception (Unix.Unix_error (Unix.ENOENT, _, _)) -> false
-
-let try_finalize f x finally y =
-  let res = try f x with exn -> finally y; raise exn in
-  finally y;
-  res
 
 let indir path f =
   let pwd = Unix.getcwd () in
@@ -114,20 +136,21 @@ let max = ref 0
 let test_bad f =
   if not !verbose then printf ".%!";
   incr max;
-  if compile f true then
-    printf "\nERROR on \"%s\" (should fail to compile)\n" f
+  if fst (compile f true)
+  then printf "\n%s* ERROR %s: should fail to compile%s\n"
+              !red f !reset
   else incr score
 
-exception Echec of string
+exception Echec of string * string list
 
 let system_ok ~err commandline =
   if !verbose then printf "Running: %s\n%!" commandline;
-  let ok =
-    (match Unix.system commandline with
-     | Unix.WEXITED rc -> rc = 0
-     | Unix.WSIGNALED s | Unix.WSTOPPED s -> false)
+  let r, log = run_command commandline in
+  let ok = match r with
+           | Unix.WEXITED rc -> rc = 0
+           | Unix.WSIGNALED s | Unix.WSTOPPED s -> false
   in
-  if not ok then raise (Echec err)
+  if not ok then raise (Echec (err, log))
 
 let test_c eptpath base_f () =
   List.iter (fun f ->
@@ -150,7 +173,8 @@ let test_good f =
   incr max;
   try
     let base_f = Filename.(remove_extension (basename f)) in
-    if not (compile f false) then raise (Echec "Compilation failed.");
+    let r, log = compile f false in
+    if not r then raise (Echec ("Compilation failed.", log));
 
     (* Compil. minils ? *)
     if !minils then
@@ -179,21 +203,23 @@ let test_good f =
                  vhdlc vhdl_file vhdlc vhdl_file)) (files_in "." ".vhd"));
 
     incr score
-  with Echec msg ->
-    printf "\nERROR on \"%s\" (should compile):\n%s\n%!" f msg
+  with Echec (msg, log) ->
+    (printf "\n%s* ERROR %s: %s%s\n%!" !red f msg !reset;
+     List.iter (printf "%s\n") log)
 
 let launch_check () =
   if not (dir_exists checkdir) then Unix.mkdir checkdir 0o777;
   Unix.chdir checkdir;
 
   (* les mauvais *)
-  printf "Test bads\n";
+  printf "%sTest bads%s\n%!" !blue !reset;
   List.iter test_bad (files_in "../bad" ".ept");
 
-  printf "\nTest goods\n%!";
+  printf "\n%sTest goods%s\n%!" !blue !reset;
   List.iter test_good (files_in "../good" ".ept");
 
-  printf "\nTest: %d/%d : %d%%\n" !score !max (100 * !score / !max)
+  printf "\n%sTest: %d/%d : %d%%%s\n"
+         !blue !score !max (100 * !score / !max) !reset
 
 let activate_clean () =
   ignore (Unix.system (sprintf "rm -r %s" checkdir));
@@ -251,6 +277,7 @@ let _ = Arg.(parse [
   "-memalloc", Unit activate_memalloc, " test of memory allocation";
   "-c", Unit activate_c, " test of code generation (c code)";
   "-all", Unit activate_all, " test all";
+  "-nocolor", Unit deactivate_colors, " do not use ANSI color sequences";
   "-v", Set verbose, " verbose";
   ]
   (fun s -> coption := !coption ^ " " ^ s)
