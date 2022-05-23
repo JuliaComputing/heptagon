@@ -14,7 +14,7 @@ See https://gitlab.inria.fr/synchrone/heptagon for further informations."
 maintainer: "Gwenaël Delaval <gwenael.delaval@inria.fr>"
 authors: "Gwenaël Delaval <gwenael.delaval@inria.fr>"
 homepage: "https://gitlab.inria.fr/synchrone/heptagon"
-dev-repo: "https://gitlab.inria.fr/synchrone/heptagon"
+dev-repo: "git+https://gitlab.inria.fr/synchrone/heptagon.git"
 bug-reports: "https://gitlab.inria.fr/synchrone/heptagon/-/issues"
 license: [" GPL-3.0-or-later"]
 build: [
