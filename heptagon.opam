@@ -10,11 +10,13 @@ experimentation. The current version of the compiler includes the
 following features:
 - Inclusion of discrete controller synthesis within the compilation
 - Expression and compilation of array values with modular memory optimization
-See http://heptagon.gforge.inria.fr for further informations."
+See https://gitlab.inria.fr/synchrone/heptagon for further informations."
 maintainer: "Gwenaël Delaval <gwenael.delaval@inria.fr>"
 authors: "Gwenaël Delaval <gwenael.delaval@inria.fr>"
-homepage: "http://heptagon.gforge.inria.fr"
+homepage: "https://gitlab.inria.fr/synchrone/heptagon"
+dev-repo: "https://gitlab.inria.fr/synchrone/heptagon"
 bug-reports: "https://gitlab.inria.fr/synchrone/heptagon/-/issues"
+license: [" GPL-3.0-or-later"]
 build: [
    ["./configure" "--prefix" prefix]
    [make]
