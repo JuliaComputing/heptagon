@@ -49,7 +49,7 @@ let df = function
       flag ["ocaml"; "parser" ; "menhir" ; "use_menhir"] (S[A"--explain";
                                                             A"--table"]);
 
-      flag ["ocaml"; "compile" ] (S[A"-w"; A"Ae"; A"-warn-error"; A"PU";
+      flag ["ocaml"; "compile" ] (S[A"-w"; A"+A-e"; A"-warn-error"; A"+P+U";
                                     A"-w"; A"-9-48"]);
 
   | _ -> ()
