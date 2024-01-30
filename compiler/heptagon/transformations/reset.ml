@@ -36,10 +36,23 @@ open Hept_utils
 open Types
 open Initial
 
-(* We introduce an initialization variable for each reset block  *)
-(* e1 -> e2 is translated into if (true fby false) then e1 else e2 *)
+(* This pass performs two tasks:
 
+   1. eliminate reset blocks;
 
+   2. lower the "fby" and "init" (->) operators to possibly-initialized "pre".
+
+   This is done in a single pass over the syntax tree, by propagating
+   disjunctions of reinitialization conditions. In the general case:
+
+   - "c fby e2" and "pre(c, e2)" rewrite to "if rst then c else pre(c, e2)";
+
+   - "e1 fby e2" rewrites to "if rst or (true -> false) then e1 else pre e2";
+
+   - "e1 -> e2" rewrites to "if rst or (true -> false) then e1 else e2".
+
+   In the first case, we avoid useless if statements when "rst" is the condition
+   that is always false. *)
 
 let fresh = Idents.gen_fresh "reset" ~reset:true (fun () -> "r")
 
@@ -58,46 +71,62 @@ let merge_resets res1 res2 =
     | _, None -> res1
     | Some e1, Some e2 -> Some { e1 with e_desc = mk_or e1 e2 }
 
+(* [if_opt_cond ~whentrue ~otherwise cond] returns the Heptagon expression "if
+   cond then whentrue else otherwise" when [cond] is not [None], and [otherwise]
+   otherwise. *)
+let if_opt_cond ~whentrue ~otherwise = function
+  | None -> otherwise.e_desc
+  | Some cond -> mk_op_app Eifthenelse [cond; whentrue; otherwise]
 
-(** if res then e2 else e3 *)
-let ifres res e2 e3 =
-  let init loc =
+(* [if_opt_cond_or_init ~whentrue ~otherwise cond] returns the Heptagon
+   expression "if cond or (true fby false) then whentrue else otherwise". *)
+let if_opt_cond_or_init ~whentrue ~otherwise cond =
+  let init =
     mk_exp (Epre (Some (mk_static_bool true), dfalse))
-      ~loc:loc (Tid Initial.pbool) ~linearity:Linearity.Ltop
+      ~loc:otherwise.e_loc (Tid Initial.pbool) ~linearity:Linearity.Ltop
   in
-  match res with
-    | None -> mk_op_app Eifthenelse [init e3.e_loc; e2; e3]
-    | Some re -> mk_op_app Eifthenelse [re; e2; e3]
-
-(** Keep whenever possible the initialization value *)
-let default e =
-  match e.e_desc with
-    | Econst c -> Some c
-    | _ -> None
-
+  if_opt_cond ~whentrue ~otherwise (merge_resets (Some init) cond)
 
 let edesc funs ((res,_) as acc) ed =
   match ed with
-    | Epre (Some c, e) ->
+    | Epre (Some c, e) | Efby ({ e_desc = Econst c; }, e) ->
+       (* The initialized delay "pre (c, e)", possibly written as a fby, is
+          implemented as
+
+            [if rst then c else pre (c, e2)].
+        *)
        let e,_ = Hept_mapfold.exp_it funs acc e in
-       (match res with
-        | None -> Epre(Some c, e)
-        | Some _ ->
-           ifres res
-                 (mk_exp (Econst c) (e.e_ty) ~linearity:Linearity.Ltop)
-                 { e with e_desc = Epre(Some c,e) }), acc
+       if_opt_cond
+         ~whentrue:(mk_exp (Econst c) (e.e_ty) ~linearity:Linearity.Ltop)
+         ~otherwise:{ e with e_desc = Epre (Some c, e); }
+         res,
+       acc
     | Efby (e1, e2) ->
+       (* Since [e1] is not a constant, we must translate [e1 fby e2] to
+
+            [if rst or (true fby false) then e1 else pre e2].
+
+          Omitting the second term in the disjunction is incorrect
+          w.r.t. initialization.
+        *)
+        let e1, _ = Hept_mapfold.exp_it funs acc e1 in
+        let e2, _ = Hept_mapfold.exp_it funs acc e2 in
+        if_opt_cond_or_init
+          ~whentrue:e1
+          ~otherwise:{ e2 with e_desc = Epre(None, e2) }
+          res,
+        acc
+    | Eapp({ a_op = Earrow }, [e1; e2], _) ->
+       (* We translate [e1 -> e2] to
+
+            [if rst or (true fby false) then e1 else e2].
+
+          Omitting the second term in the disjunction is incorrect since "rst"
+          might not be true at the first tick.
+        *)
         let e1,_ = Hept_mapfold.exp_it funs acc e1 in
         let e2,_ = Hept_mapfold.exp_it funs acc e2 in
-        (match res, e1 with
-         | None, { e_desc = Econst c } ->
-            (* no reset : [if res] useless, the initialization is sufficient *)
-            Epre(Some c, e2)
-         | _ -> ifres res e1 { e2 with e_desc = Epre(default e1, e2) }), acc
-    | Eapp({ a_op = Earrow }, [e1;e2], _) ->
-        let e1,_ = Hept_mapfold.exp_it funs acc e1 in
-        let e2,_ = Hept_mapfold.exp_it funs acc e2 in
-        ifres res e1 e2, acc
+        if_opt_cond_or_init ~whentrue:e1 ~otherwise:e2 res, acc
     | Eapp({ a_op = Enode _ } as op, e_list, re) ->
         let args,_ = mapfold (Hept_mapfold.exp_it funs) acc e_list in
         let re,_ = optional_wacc (Hept_mapfold.exp_it funs) acc re in
