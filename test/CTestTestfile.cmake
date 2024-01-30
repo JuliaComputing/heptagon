@@ -207,6 +207,8 @@ ADD_TEST(compile_gcc_run_type_alias "scripts/compile_gcc_run" "good/type_alias.e
 ADD_TEST(compile_gcc_run_updown "scripts/compile_gcc_run" "good/updown.ept")
 ADD_TEST(compile_gcc_run_when_merge1 "scripts/compile_gcc_run" "good/when_merge1.ept")
 ADD_TEST(compile_gcc_run_xor "scripts/compile_gcc_run" "good/xor.ept")
+ADD_TEST(compile_gcc_run_reset_init "scripts/compile_gcc_run" "good/reset_init.ept")
+ADD_TEST(compile_gcc_run_reset_fby "scripts/compile_gcc_run" "good/reset_fby.ept")
 ADD_TEST(test_option_bool_ais "scripts/test_option" "good/ais.ept" "-bool")
 ADD_TEST(test_option_bool_alloc "scripts/test_option" "good/alloc.ept" "-bool")
 ADD_TEST(test_option_bool_array1 "scripts/test_option" "good/array1.ept" "-bool")
