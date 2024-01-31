@@ -17,12 +17,10 @@ pushd $checkdir > /dev/null
 heptprog=`basename $progpath`
 heptroot=`basename $heptprog .ept`
 
-assert_node=$(eval grep CHECK $heptprog | awk '{ print $3 }')
-
-if [ -n "$assert_node" ]; then
+for assert_node in $(eval grep CHECK $heptprog | awk '{ print $3 }'); do
     coption="$coption -assert $assert_node"
     run=1
-fi
+done
 
 if grep "node main()" $heptprog >/dev/null; then
     coption="$coption -hepts -s main"
