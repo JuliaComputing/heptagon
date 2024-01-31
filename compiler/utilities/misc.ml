@@ -269,7 +269,7 @@ exception Assert_false
 let internal_error passe =
   Format.eprintf "@.---------@\n\
                   Internal compiler error@\n\
-                  Passe : %s@\n\
+                  Pass: %s@\n\
                   ----------@." passe;
   raise Assert_false
 
@@ -277,7 +277,7 @@ exception Unsupported
 let unsupported passe =
   Format.eprintf "@.---------@\n\
 Unsupported feature, please report it@\n\
-Passe : %s@\n\
+Pass: %s@\n\
 ----------@." passe;
   raise Unsupported
 
