@@ -140,8 +140,28 @@ let char_for_decimal_code lexbuf i =
 
 }
 
-
 let newline = '\n' | '\r' '\n'
+
+(* The syntax of numeric literals follow that of OCaml, since this allows using
+   Stdlib.int/float_of_string. An approximate description of this syntax can be
+   fonud in the OCaml manual at https://v2.ocaml.org/manual/lex.html *)
+
+let sign = '+' | '-'
+let dec_digit = ['0'-'9']
+let hex_digit = dec_digit | ['a'-'f'] | ['A'-'F']
+let oct_digit = ['0'-'7']
+let bin_digit = ['0'-'1']
+
+let int = sign? dec_digit (dec_digit | '_')*
+        | sign? '0' ['x' 'X'] hex_digit (hex_digit | '_')*
+        | sign? '0' ['o' 'O'] oct_digit (oct_digit | '_')*
+        | sign? '0' ['b' 'B'] bin_digit (bin_digit | '_')*
+
+let float =
+    sign? dec_digit (dec_digit | '_')* ('.' (dec_digit | '_')*)?
+      (('e' | 'E') sign dec_digit (dec_digit | '_')*)?
+  | sign? '0' ['x' 'X'] hex_digit (hex_digit | '_')* ('.' (hex_digit | '_')*)?
+      (('p' | 'P') sign dec_digit (dec_digit | '_')*)?
 
 rule token = parse
   | newline         { new_line lexbuf; token lexbuf }
@@ -188,13 +208,8 @@ rule token = parse
         Not_found -> IDENT id
     end
       }
-  | ['0'-'9']+
-  | '0' ['x' 'X'] ['0'-'9' 'A'-'F' 'a'-'f']+
-  | '0' ['o' 'O'] ['0'-'7']+
-  | '0' ['b' 'B'] ['0'-'1']+
-      { INT (int_of_string(Lexing.lexeme lexbuf)) }
-  | ['0'-'9']+ ('.' ['0'-'9']+)? (['e' 'E'] ['+' '-']? ['0'-'9']+)?
-      { FLOAT (float_of_string(Lexing.lexeme lexbuf)) }
+  | int { INT (int_of_string (Lexing.lexeme lexbuf)) }
+  | float { FLOAT (float_of_string (Lexing.lexeme lexbuf)) }
   | "\""
       { reset_string_buffer();
         (*let string_start = lexbuf.lex_curr_p in
