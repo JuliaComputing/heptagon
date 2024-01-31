@@ -108,7 +108,20 @@ let apply_op partial loc op se_list =
       | "/.", [Sfloat f1; Sfloat f2] ->
           if f2 = 0.0 then raise (Evaluation_failed (Division_by_zero, loc));
           Sfloat (f1 /. f2)
-      | "=", [Sint n1; Sint n2] -> Sbool (n1 = n2)
+      | "=", [s1; s2] ->
+         let rec eq ed1 ed2 = match ed1, ed2 with
+           | Sint n1, Sint n2 -> n1 = n2
+           | Sfloat f1, Sfloat f2 -> f1 = f2
+           | Sbool b1, Sbool b2 -> b1 = b2
+           | Sstring s1, Sstring s2 -> s1 = s2
+           | Sconstructor c1, Sconstructor c2 -> c1 = c2
+           | Stuple es1, Stuple es2 | Sarray es1, Sarray es2 ->
+              List.for_all2 eq_se es1 es2
+           | _ ->
+              Misc.internal_error "Could not evaluate static equality"
+         and eq_se se1 se2 = eq se1.se_desc se2.se_desc
+         in
+         Sbool (eq s1 s2)
       | "<=", [Sint n1; Sint n2] -> Sbool (n1 <= n2)
       | ">=", [Sint n1; Sint n2] -> Sbool (n1 >= n2)
       | "<", [Sint n1; Sint n2] -> Sbool (n1 < n2)
