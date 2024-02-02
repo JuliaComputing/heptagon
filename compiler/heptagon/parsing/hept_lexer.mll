@@ -142,9 +142,9 @@ let char_for_decimal_code lexbuf i =
 
 let newline = '\n' | '\r' '\n'
 
-(* The syntax of numeric literals follow that of OCaml, since this allows using
+(* The syntax of numeric literals follows that of OCaml, since this allows using
    Stdlib.int/float_of_string. An approximate description of this syntax can be
-   fonud in the OCaml manual at https://v2.ocaml.org/manual/lex.html *)
+   found in the OCaml manual at https://v2.ocaml.org/manual/lex.html *)
 
 let sign = '+' | '-'
 let dec_digit = ['0'-'9']
