@@ -142,6 +142,11 @@ let char_for_decimal_code lexbuf i =
 
 let newline = '\n' | '\r' '\n'
 
+(*  *)
+
+let op_sigil =
+  ['!' '$' '%' '&' '*' '+' '-' '.' '/' ':' '<' '=' '>' '?' '@' '^' '|' '~']
+
 (* The syntax of numeric literals follows that of OCaml, since this allows using
    Stdlib.int/float_of_string. An approximate description of this syntax can be
    found in the OCaml manual at https://v2.ocaml.org/manual/lex.html *)
@@ -241,28 +246,21 @@ rule token = parse
    | "--" | "--%"
       { single_line_comment lexbuf }
    | ['!' '?' '~']
-      ['!' '$' '%' '&' '*' '+' '-' '.' '/' ':'
-    '<' '=' '>' '?' '@' '^' '|' '~'] *
+      op_sigil*
       { PREFIX(Lexing.lexeme lexbuf) }
   | ['=' '<' '>' '&'  '|' '&' '$']
-      ['!' '$' '%' '&' '*' '+' '-' '.' '/' ':' '<' '=' '>'
-    '?' '@' '^' '|' '~'] *
+      op_sigil *
       { INFIX0(Lexing.lexeme lexbuf) }
   | ['@' '^']
-      ['!' '$' '%' '&' '*' '+' '-' '.' '/' ':' '<' '=' '>'
-    '?' '@' '^' '|' '~'] *
+      op_sigil *
       { INFIX1(Lexing.lexeme lexbuf) }
-  | ['+' '-']
-      ['!' '$' '%' '&' '*' '+' '-' '.' '/' ':' '<' '=' '>'
-    '?' '@' '^' '|' '~'] *
+  | ['+' '-'] op_sigil*
       { INFIX2(Lexing.lexeme lexbuf) }
   | "**"
-      ['!' '$' '%' '&' '*' '+' '-' '.' '/' ':' '<' '=' '>'
-    '?' '@' '^' '|' '~'] *
+      op_sigil *
       { INFIX4(Lexing.lexeme lexbuf) }
   | ['*' '/' '%']
-      ['!' '$' '%' '&' '*' '+' '-' '.' '/' ':' '<' '=' '>'
-    '?' '@' '^' '|' '~'] *
+      op_sigil *
       { INFIX3(Lexing.lexeme lexbuf) }
   | eof            {EOF}
   | _              {raise (Lexical_error (Illegal_character,
