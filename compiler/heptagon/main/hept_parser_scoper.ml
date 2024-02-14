@@ -32,8 +32,16 @@ open Compiler_utils
 open Location
 
 let parse parsing_fun lexbuf =
+  let token =
+    if !Compiler_options.debug_tokens then
+      fun lexbuf -> let tok = Hept_lexer.token lexbuf in
+                    Printf.printf "%s;" (Hept_lexer.string_of_token tok);
+                    tok
+    else
+      Hept_lexer.token
+  in
   try
-    parsing_fun Hept_lexer.token lexbuf
+    parsing_fun token lexbuf
   with
     | Hept_lexer.Lexical_error(err, l) ->
         lexical_error err l

@@ -179,6 +179,8 @@ let interf_all = ref false
 
 let time_passes = ref false
 
+let debug_tokens = ref false
+
 let doc_verbose = "\t\t\tSet verbose mode"
 and doc_version = "\t\tThe version of the compiler"
 and doc_print_types = "\t\t\tPrint types"
@@ -222,3 +224,4 @@ and doc_time_passes = "\t\tTime compilation passes"
 and doc_abstract_infinite = "\tAbstract infinite state (implied for z3z target)"
 and doc_no_warn_untranslat = "\tSuppress warnings about untranslatable constructs"
 and doc_no_warn_abstractions = "\tSuppress abstraction warnings"
+and doc_debug_tokens = "\t(undocumented)"

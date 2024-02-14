@@ -110,6 +110,108 @@ List.iter (fun (str,tok) -> Hashtbl.add keyword_table str tok) [
  "asr", INFIX4("asr")
 ]
 
+let string_of_token = function
+  | DOT -> "DOT"
+  | LPAREN -> "LPAREN"
+  | LESS_LPAREN -> "LESS_LPAREN"
+  | RPAREN -> "RPAREN"
+  | RPAREN_GREATER -> "RPAREN_GREATER"
+  | LBRACE -> "LBRACE"
+  | RBRACE -> "RBRACE"
+  | COLON -> "COLON"
+  | COLONCOLON -> "COLONCOLON"
+  | SEMICOL -> "SEMICOL"
+  | EQUAL -> "EQUAL"
+  | EQUALEQUAL -> "EQUALEQUAL"
+  | LESS_GREATER -> "LESS_GREATER"
+  | BARBAR -> "BARBAR"
+  | COMMA -> "COMMA"
+  | BAR -> "BAR"
+  | ARROW -> "ARROW"
+  | LET -> "LET"
+  | TEL -> "TEL"
+  | TYPE -> "TYPE"
+  | FUN -> "FUN"
+  | NODE -> "NODE"
+  | RETURNS -> "RETURNS"
+  | VAR -> "VAR"
+  | VAL -> "VAL"
+  | OPEN -> "OPEN"
+  | END -> "END"
+  | CONST -> "CONST"
+  | UNSAFE -> "UNSAFE"
+  | EXTERNAL -> "EXTERNAL"
+  | FBY -> "FBY"
+  | PRE -> "PRE"
+  | SWITCH -> "SWITCH"
+  | EVERY -> "EVERY"
+  | WHEN -> "WHEN"
+  | WHENOT -> "WHENOT"
+  | MERGE -> "MERGE"
+  | ON -> "ON"
+  | ONOT -> "ONOT"
+  | LBRACKET -> "LBRACKET"
+  | LBRACKETGREATER -> "LBRACKETGREATER"
+  | RBRACKET -> "RBRACKET"
+  | LESSRBRACKET -> "LESSRBRACKET"
+  | DOUBLE_LESS -> "DOUBLE_LESS"
+  | DOUBLE_GREATER -> "DOUBLE_GREATER"
+  | MAP -> "MAP"
+  | MAPI -> "MAPI"
+  | FOLD -> "FOLD"
+  | FOLDI -> "FOLDI"
+  | MAPFOLD -> "MAPFOLD"
+  | AT -> "AT"
+  | INIT -> "INIT"
+  | SPLIT -> "SPLIT"
+  | REINIT -> "REINIT"
+  | AND -> "AND"
+  | OR -> "OR"
+  | STAR -> "STAR"
+  | NOT -> "NOT"
+  | AMPERSAND -> "AMPERSAND"
+  | AMPERAMPER -> "AMPERAMPER"
+  | AUTOMATON -> "AUTOMATON"
+  | PRESENT -> "PRESENT"
+  | RESET -> "RESET"
+  | STATE -> "STATE"
+  | UNLESS -> "UNLESS"
+  | UNTIL -> "UNTIL"
+  | LAST -> "LAST"
+  | IF -> "IF"
+  | THEN -> "THEN"
+  | ELSE -> "ELSE"
+  | DEFAULT -> "DEFAULT"
+  | DO -> "DO"
+  | DONE -> "DONE"
+  | IN -> "IN"
+  | CONTINUE -> "CONTINUE"
+  | CONTRACT -> "CONTRACT"
+  | ASSUME -> "ASSUME"
+  | ENFORCE -> "ENFORCE"
+  | REACHABLE -> "REACHABLE"
+  | ATTRACTIVE -> "ATTRACTIVE"
+  | WITH -> "WITH"
+  | INLINED -> "INLINED"
+  | POWER -> "POWER"
+  | DOUBLE_DOT -> "DOUBLE_DOT"
+  | AROBASE -> "AROBASE"
+  | THREE_DOTS -> "THREE_DOTS"
+  | EOF -> "EOF"
+  | PREFIX s -> Printf.sprintf "PREFIX<%s>" s
+  | INFIX0 s -> Printf.sprintf "INFIX0<%s>" s
+  | INFIX1 s -> Printf.sprintf "INFIX1<%s>" s
+  | INFIX2 s -> Printf.sprintf "INFIX2<%s>" s
+  | SUBTRACTIVE s -> Printf.sprintf "SUBTRACTIVE<%s>" s
+  | INFIX3 s -> Printf.sprintf "INFIX3<%s>" s
+  | INFIX4 s -> Printf.sprintf "INFIX4<%s>" s
+  | Constructor s -> Printf.sprintf "Constructor<%s>" s
+  | IDENT s -> Printf.sprintf "IDENT<%s>" s
+  | INT i -> Printf.sprintf "INT<%d>" i
+  | FLOAT f -> Printf.sprintf "FLOAT<%f>" f
+  | BOOL b -> Printf.sprintf "BOOL<%b>" b
+  | STRING s -> Printf.sprintf "STRING<%s>" s
+  | PRAGMA (s1, s2) -> Printf.sprintf "PRAGMA<%s, %s>" s1 s2
 
 (* To buffer string literals *)
 

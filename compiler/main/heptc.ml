@@ -174,6 +174,7 @@ let main () =
          doc_no_warn_untranslat);
         ("-Wno-abstract", Arg.Clear warn_abstractions,
          doc_no_warn_abstractions);
+        "-debug-tokens", Arg.Set debug_tokens, doc_debug_tokens;
       ]
         compile errmsg;
   with
