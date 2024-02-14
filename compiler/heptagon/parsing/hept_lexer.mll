@@ -152,15 +152,15 @@ let hex_digit = dec_digit | ['a'-'f'] | ['A'-'F']
 let oct_digit = ['0'-'7']
 let bin_digit = ['0'-'1']
 
-let int = sign? dec_digit (dec_digit | '_')*
-        | sign? '0' ['x' 'X'] hex_digit (hex_digit | '_')*
-        | sign? '0' ['o' 'O'] oct_digit (oct_digit | '_')*
-        | sign? '0' ['b' 'B'] bin_digit (bin_digit | '_')*
+let int = dec_digit (dec_digit | '_')*
+        | '0' ['x' 'X'] hex_digit (hex_digit | '_')*
+        | '0' ['o' 'O'] oct_digit (oct_digit | '_')*
+        | '0' ['b' 'B'] bin_digit (bin_digit | '_')*
 
 let float =
-    sign? dec_digit (dec_digit | '_')* ('.' (dec_digit | '_')*)?
+    dec_digit (dec_digit | '_')* ('.' (dec_digit | '_')*)?
       (('e' | 'E') sign dec_digit (dec_digit | '_')*)?
-  | sign? '0' ['x' 'X'] hex_digit (hex_digit | '_')* ('.' (hex_digit | '_')*)?
+  | '0' ['x' 'X'] hex_digit (hex_digit | '_')* ('.' (hex_digit | '_')*)?
       (('p' | 'P') sign dec_digit (dec_digit | '_')*)?
 
 rule token = parse
