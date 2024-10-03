@@ -108,9 +108,11 @@ let compile_program modname source_f =
 
 
 let compile source_f =
+  if not (Sys.file_exists source_f) then
+    raise Arg.(Bad ("Unknown file: " ^ source_f));
   let modname = source_f
                 |> Filename.basename
-                |> Filename.chop_extension
+                |> Filename.remove_extension
                 |> String.capitalize_ascii in
   let modul = Names.modul_of_string modname in
   Initial.initialize modul;
