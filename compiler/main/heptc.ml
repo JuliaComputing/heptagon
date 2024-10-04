@@ -133,6 +133,7 @@ let main () =
     Arg.String (fun s -> f (try Names.qualname_of_string s with
       | Exit -> raise (Arg.Bad ("Invalid name: "^ s)))) in
   try
+    let inputs = Queue.create () in
     Arg.parse
       [
         "-v",Arg.Set verbose, doc_verbose;
@@ -180,7 +181,8 @@ let main () =
          doc_no_warn_abstractions);
         "-debug-tokens", Arg.Set debug_tokens, doc_debug_tokens;
       ]
-        compile errmsg;
+        (fun input -> Queue.push input inputs) errmsg;
+    Queue.iter compile inputs;
   with
     | Errors.Error -> exit 2;;
 
