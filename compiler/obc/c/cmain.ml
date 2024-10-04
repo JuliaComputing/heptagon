@@ -383,7 +383,12 @@ let mk_main name p =
           let (mem, nvar_l, res, nstep_l) = main_def_of_class_def (find_class n) in
           let defs = match mem with None -> [] | Some m -> [m] in
           (defs, nvar_l @ var_l, res @ res_l, nstep_l @ step_l)
-        with Not_found -> ([],var_l,res_l,step_l) in
+        with Not_found ->
+          Compiler_utils.warn
+            "There is no node '%s' in module %s, \
+             the option -s was ignored." n !global_name;
+          ([],var_l,res_l,step_l)
+      in
 
       [("_main.c", Csource (defs @ [main_skel var_l res_l step_l]));
        ("_main.h", Cheader ([name], []))];
