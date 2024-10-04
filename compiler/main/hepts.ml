@@ -371,8 +371,17 @@ let main () =
 
   open_module (Module !mod_name);
 
-  let signature = find_value { qual = (Module !mod_name);
-             name = !node_name } in
+  let signature =
+    try find_value { qual = (Module !mod_name);
+                     name = !node_name }
+    with Not_found ->
+      (* At this point we know that the module exists,
+         as otherwise [open_module] above would have failed.
+         The error must come from the node name. *)
+      Compiler_utils.error "There is no node '%s' in the module '%s'."
+        !node_name !mod_name;
+      raise Errors.Error
+  in
 
   let nb_inputs = List.length signature.node_inputs in
   let nb_outputs = List.length signature.node_outputs in
