@@ -122,7 +122,6 @@ let string_of_token = function
   | COLONCOLON -> "COLONCOLON"
   | SEMICOL -> "SEMICOL"
   | EQUAL -> "EQUAL"
-  | EQUALEQUAL -> "EQUALEQUAL"
   | LESS_GREATER -> "LESS_GREATER"
   | BARBAR -> "BARBAR"
   | COMMA -> "COMMA"
@@ -285,7 +284,6 @@ rule token = parse
   | "::"            {COLONCOLON}
   | ";"             {SEMICOL}
   | "="             {EQUAL}
-  | "=="            {EQUALEQUAL}
   | "<>"            {LESS_GREATER}
   | "&"             {AMPERSAND}
   | "&&"            {AMPERAMPER}

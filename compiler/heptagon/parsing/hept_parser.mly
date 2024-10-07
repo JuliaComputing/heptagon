@@ -37,7 +37,7 @@ open Hept_parsetree
 %}
 
 %token DOT LPAREN LESS_LPAREN RPAREN RPAREN_GREATER LBRACE RBRACE COLON COLONCOLON SEMICOL
-%token EQUAL EQUALEQUAL LESS_GREATER BARBAR COMMA BAR ARROW LET TEL
+%token EQUAL LESS_GREATER BARBAR COMMA BAR ARROW LET TEL
 %token <string> Constructor
 %token <string> IDENT
 %token <int> INT
@@ -709,7 +709,6 @@ infx:
   | INFIX3          { $1 }    | INFIX4        { $1 }
   | STAR            { "*" }
   | EQUAL           { "=" }
-  | EQUALEQUAL      { "==" }
   | SUBTRACTIVE     { $1 }    | PREFIX        { $1 }
   | AMPERSAND       { "&" }   | AMPERAMPER    { "&&" }
   | OR              { "or" }  | BARBAR        { "||" }
