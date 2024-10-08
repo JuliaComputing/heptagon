@@ -108,8 +108,10 @@ let compile_program modname source_f =
 
 
 let compile source_f =
-  if not (Sys.file_exists source_f) then
-    raise Arg.(Bad ("Unknown file: " ^ source_f));
+  if not (Sys.file_exists source_f) then begin
+    Compiler_utils.error "file %s does not exist." source_f;
+    raise Errors.Error;
+  end;
   let modname = source_f
                 |> Filename.basename
                 |> Filename.remove_extension
