@@ -31,24 +31,34 @@ open Minils
 open Mls_mapfold
 open Mls_utils
 
-(** Adds an extra equation for outputs that are also memories.  For instance, if
-    o is an output, then:
-
-    [ o = v fby e ] becomes [ mem_o = v fby e; o = mem_o; ]
-
-    We also need to add one copy if two (or more) registers are defined by each
-    other, eg:
-
-    [ x = v fby y; y = v fby x; ] becomes [ mem_x = v fby y; x = mem_x; y = v
-    fby x; ] *)
-
 let normalize_outputs = ref true
 
-(** Builds the initial environment, that maps any register to the ident on the right hand side.
-    For outputs that are also registers, if normalize_outputs is true,
-    they are mapped to themselves to force the copy (made necessary by the calling convention).
-    Other variables are mapped to None. *)
-let build_env nd =
+(** This pass enforces the following invariants on the body of each input node:
+
+    1. it contains no {i delay cycle}, that is, set of equations of shape {v x1
+    = v1 fby x2 ; ... ; xN = vN fby x1 v}, and
+
+    2. if [normalize_outputs] is true, no output can be defined to be a fby.
+
+    To do so, we introduce one additional copy for each delay cycle, e.g., the
+    cycle {v x1 = v1 fby x2; x2 = v2 fby x2; v} becomes {v mem_x1 = v1 fby x1;
+    x1 = mem_x1; x2 = v2 fby x1; v}, and {v o = v fby e v} becomes {v mem_o = v
+    fby e; o = mem_o; v}.
+
+    The copy insertion algorithm works in two steps.
+
+    In the first step, we compute an initial environment that contains, for each
+    register {v x = v fby y v}, a mapping from [x] to [Some y]. Additionally, if
+    [normalize_outputs] is true, this environment contains mappings from [o] to
+    [Some o] for each output [o]. The other variables are mapped to [None].
+
+    In the second step, we look for every equation of shape {v x = ... fby
+    ... v} with [x] being part of a delay cycle (or being an output), and
+    introduce a copy. We then break the cycle involving [x] in the environment,
+    which makes sure only one copy gets added for each cycle.
+*)
+
+let build_initial_env nd =
   let add_none env l = List.fold_left (fun env vd -> Env.add vd.v_ident None env) env l in
   let rec add_eq env eq = match eq.eq_lhs, eq.eq_rhs.e_desc with
     | _, Ewhen (e, _, _) -> add_eq env { eq with eq_rhs = e }
@@ -75,16 +85,21 @@ let rec replace_fby e exp_mem_x = match e.e_desc with
   | Efby (_, _) -> exp_mem_x
   | _ -> assert false
 
-let rec depends_on x y env =
-  match Env.find y env with
+let is_cyclic x env =
+  (* The environment might be cyclic even assuming the program is causal since
+     it contains non-instantaneous dependencies. *)
+  let rec loop seen y =
+    match Env.find y env with
     | None -> false
     | Some z ->
-      if ident_compare x z = 0 then true
-      else if ident_compare y z = 0 then false
-      else depends_on x z env
+       ident_compare x z = 0
+       || (not (IdentSet.mem z seen) && loop (IdentSet.add y seen) z)
+  in
+  loop IdentSet.empty x
 
-let eq _funs (env, vds, v, eqs) eq = match eq.eq_lhs, eq.eq_rhs with
-  | Evarpat x, e when Vars.is_fby e && depends_on x x env ->
+let eq _funs (env, vds, v, eqs) eq =
+  match eq.eq_lhs, eq.eq_rhs with
+  | Evarpat x, e when Vars.is_fby e && is_cyclic x env ->
         let vd = vd_find x vds in
         let x_mem = Idents.gen_var "normalize_mem" ("mem_"^(Idents.name x)) in
         let vd_mem = { vd with v_ident = x_mem } in
@@ -95,7 +110,7 @@ let eq _funs (env, vds, v, eqs) eq = match eq.eq_lhs, eq.eq_rhs with
         let eq_copy = { eq with eq_lhs = Evarpat x_mem } in
         (* o = mem_o *)
         let eq = { eq with eq_rhs = replace_fby e exp_mem_x } in
-        (* remove the dependency in env *)
+        (* remove the dependency in env, breaking the cycle *)
         let env = Env.add x None env in
         eq, (env, vds, vd_mem::v, eq::eq_copy::eqs)
   | _, _ ->
@@ -105,7 +120,7 @@ let eq _funs (env, vds, v, eqs) eq = match eq.eq_lhs, eq.eq_rhs with
 let contract _ acc c = c, acc
 
 let node funs acc nd =
-  let env = build_env nd in
+  let env = build_initial_env nd in
   let nd, (_, _, v, eqs) =
     Mls_mapfold.node_dec funs (env, nd.n_output @ nd.n_local, nd.n_local, []) nd
   in
