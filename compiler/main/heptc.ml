@@ -133,16 +133,35 @@ let main () =
     Arg.String (fun s -> f (try Names.qualname_of_string s with
       | Exit -> raise (Arg.Bad ("Invalid name: "^ s)))) in
   try
+    (* A queue of all inputs to compile, after applying all options. *)
+    let inputs = Queue.create () in
+
+    (* Single-use options are recorded first and applied later. *)
+    let callbacks = Queue.create () in
+    let module Option = Single_use_option in
+    let simulation_node = Option.make () in
+    Queue.add (fun () -> Option.iter set_simulation_node simulation_node) callbacks;
+    let target_path = Option.make () in
+    Queue.add (fun () -> Option.iter set_target_path target_path) callbacks;
+    let sprintf = Printf.sprintf in
+
+    (* Apply all multi-use options and record all single-use options. *)
     Arg.parse
       [
-        "-v",Arg.Set verbose, doc_verbose;
+        "-v", Arg.Set verbose, doc_verbose;
         "-version", Arg.Unit show_version, doc_version;
         "-i", Arg.Set print_types, doc_print_types;
         "-I", Arg.String add_include, doc_include;
         "-where", Arg.Unit locate_stdlib, doc_locate_stdlib;
-        "-stdlib", Arg.String set_stdlib, doc_stdlib;
+        "-stdlib",
+          (* We don't use Option.set here, because the ./heptc wrapper
+             passes '-stdlib ...' under the hood, so any use of -stdlib
+             by the user would fail with an incompatible-options error. *)
+          Arg.String set_stdlib, doc_stdlib;
         "-c", Arg.Set create_object_file, doc_object_file;
-        "-s", Arg.String set_simulation_node, doc_sim;
+        "-s",
+          Arg.String (fun s -> Option.set simulation_node (sprintf "-s %s" s) s),
+          doc_sim;
         "-hepts", Arg.Set hepts_simulation, doc_hepts;
         "-bool", Arg.Set boolean, doc_boolean;
         "-deadcode", Arg.Set deadcode, doc_deadcode;
@@ -154,7 +173,9 @@ let main () =
         "-assert", Arg.String add_assert, doc_assert;
         "-nopervasives", Arg.Unit set_no_pervasives, doc_no_pervasives;
         "-target", Arg.String add_target_language, doc_target;
-        "-targetpath", Arg.String set_target_path, doc_target_path;
+        "-targetpath",
+          Arg.String (fun s -> Option.set target_path (sprintf "-targetpath %s" s) s),
+          doc_target_path;
         "-nocaus", Arg.Clear causality, doc_nocaus;
         "-noinit", Arg.Clear init, doc_noinit;
         "-fti", Arg.Set full_type_info, doc_full_type_info;
@@ -180,7 +201,13 @@ let main () =
          doc_no_warn_abstractions);
         "-debug-tokens", Arg.Set debug_tokens, doc_debug_tokens;
       ]
-        compile errmsg;
+        (fun input -> Queue.push input inputs) errmsg;
+
+    (* Apply all recorded single-use options. *)
+    Queue.iter (fun f -> f ()) callbacks;
+
+    (* Compile all files with the recorded options *)
+    Queue.iter compile inputs;
   with
     | Errors.Error -> exit 2;;
 
