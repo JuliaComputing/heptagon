@@ -61,6 +61,14 @@ let cname_of_name name =
 (** C types relevant for Obc. Note the absence of function pointers. *)
 type cty =
   | Cty_int (** C machine-dependent integer type. *)
+  | Cty_int8 (** 8-bit signed integer type (int8_t). *)
+  | Cty_uint8 (** 8-bit unsigned integer type (uint8_t). *)
+  | Cty_int16 (** 16-bit signed integer type (int16_t). *)
+  | Cty_uint16 (** 16-bit unsigned integer type (uint16_t). *)
+  | Cty_int32 (** 32-bit signed integer type (int32_t). *)
+  | Cty_uint32 (** 32-bit unsigned integer type (uint32_t). *)
+  | Cty_int64 (** 64-bit signed integer type (int64_t). *)
+  | Cty_uint64 (** 64-bit unsigned integer type (uint64_t). *)
   | Cty_float (** C machine-dependent single-precision floating-point type. *)
   | Cty_char (** C character type. *)
   | Cty_id of qualname
@@ -199,6 +207,14 @@ let pp_shortname fmt q =
 
 let rec pp_cty fmt cty = match cty with
   | Cty_int -> fprintf fmt "int"
+  | Cty_int8 -> fprintf fmt "int8_t"
+  | Cty_uint8 -> fprintf fmt "uint8_t"
+  | Cty_int16 -> fprintf fmt "int16_t"
+  | Cty_uint16 -> fprintf fmt "uint16_t"
+  | Cty_int32 -> fprintf fmt "int32_t"
+  | Cty_uint32 -> fprintf fmt "uint32_t"
+  | Cty_int64 -> fprintf fmt "int64_t"
+  | Cty_uint64 -> fprintf fmt "uint64_t"
   | Cty_float -> fprintf fmt "float"
   | Cty_char -> fprintf fmt "char"
   | Cty_id s -> pp_qualname fmt s

@@ -266,6 +266,119 @@ let flatten_ty_list l =
   List.fold_right
     (fun arg args -> match arg with Tprod l -> l@args | a -> a::args ) l []
 
+(** Special-case handling for operators and type conversions
+
+    Rather than declaring overloaded versions of every operator and conversion
+    function in pervasives.epi (which would require hundreds of declarations),
+    we handle these specially in the type checker by synthesizing signatures
+    dynamically based on argument types.
+
+    This approach:
+    - Keeps pervasives.epi concise with only base declarations
+    - Allows operators to work with all numeric types
+    - Enables type conversion syntax like int32(x) for any numeric x
+    - Generates efficient C code using native casts
+
+    The tradeoff is that these operators/functions are hardcoded in the compiler
+    rather than being fully defined in the standard library. *)
+
+(** Operator overloading: maps operators to supported numeric types *)
+let overloadable_operators = ["+"; "-"; "*"; "/"; "%";
+                              "="; "<="; "<"; ">="; ">";
+                              "&&&"; "|||"; ">>>"; "<<<"]
+
+let numeric_types = [
+  pint; pint8; puint8; pint16; puint16; pint32; puint32; pint64; puint64; pfloat
+]
+
+let is_comparison_op op =
+  List.mem op ["="; "<="; "<"; ">="; ">"]
+
+let is_numeric_type ty =
+  match unalias_type ty with
+  | Tid t -> List.exists (fun nt -> t = nt) numeric_types
+  | _ -> false
+
+(** Try to resolve operator via overloading.
+    Returns a synthetic signature if operator can work with given argument types *)
+let try_operator_overload op_name arg_types =
+  if not (List.mem op_name overloadable_operators) then
+    raise Not_found;
+
+  (* All arguments must be numeric and the same type *)
+  if List.length arg_types = 0 then raise Not_found;
+
+  let first_ty = List.hd arg_types in
+  if not (is_numeric_type first_ty) then raise Not_found;
+
+  if not (List.for_all (fun ty ->
+    match unalias_type first_ty, unalias_type ty with
+    | Tid t1, Tid t2 -> t1 = t2
+    | _ -> false) arg_types)
+  then raise Not_found;
+
+  (* Create synthetic signature *)
+  let result_type =
+    if is_comparison_op op_name then tbool else first_ty
+  in
+
+  let mk_arg ty = {
+    a_name = None;
+    a_type = ty;
+    a_clock = Cbase;
+    a_linearity = Ltop
+  } in
+
+  {
+    node_inputs = List.map mk_arg arg_types;
+    node_outputs = [mk_arg result_type];
+    node_stateful = false;
+    node_unsafe = false;
+    node_params = [];
+    node_param_constraints = [];
+    node_external = true;
+    node_loc = Location.no_location
+  }
+
+(** Type conversion functions that accept any numeric type *)
+let type_conversion_functions = ["int8"; "uint8"; "int16"; "uint16";
+                                 "int32"; "uint32"; "int64"; "uint64"]
+
+(** Try to resolve type conversion via overloading.
+    Type conversion functions like int32() can accept any numeric type.
+    This is a special case in the type checker, similar to operator overloading.
+    Returns a synthetic signature: fn_name(any_numeric) -> target_type *)
+let try_conversion_overload fn_name arg_types =
+  if not (List.mem fn_name type_conversion_functions) then
+    raise Not_found;
+
+  (* Must have exactly one argument *)
+  if List.length arg_types <> 1 then raise Not_found;
+
+  let arg_ty = List.hd arg_types in
+  if not (is_numeric_type arg_ty) then raise Not_found;
+
+  (* Target type is named after the function, in Pervasives module *)
+  let target_type = Tid { qual = Pervasives; name = fn_name } in
+
+  let mk_arg ty = {
+    a_name = None;
+    a_type = ty;
+    a_clock = Cbase;
+    a_linearity = Ltop
+  } in
+
+  {
+    node_inputs = [mk_arg arg_ty];
+    node_outputs = [mk_arg target_type];
+    node_stateful = false;
+    node_unsafe = false;
+    node_params = [];
+    node_param_constraints = [];
+    node_external = true;
+    node_loc = Location.no_location
+  }
+
 let kind f ty_desc =
   let ty_of_arg v =
     if Linearity.is_linear v.a_linearity && not !Compiler_options.do_linear_typing then
@@ -734,6 +847,42 @@ and expect cenv h expected_ty e =
     typed_e
   with TypingError(kind) -> message e.e_loc kind
 
+(** Try to resolve operator with overloading.
+    First tries to find the value normally, then falls back to overloading if needed *)
+and resolve_operator_or_function f e_list cenv h =
+  let shortname_str = f.name in
+
+  (* For overloadable operators, try to infer types from arguments *)
+  if List.mem shortname_str overloadable_operators then
+    try
+      (* Type the arguments to infer their types *)
+      let typed_arg_types = List.map (fun e -> snd (typing cenv h e)) e_list in
+      try_operator_overload shortname_str typed_arg_types
+    with Not_found ->
+      (* Fallback to regular lookup *)
+      try
+        Modules.find_value f
+      with Not_found ->
+        error (Eundefined (fullname f))
+  (* For type conversion functions, try conversion overload *)
+  else if List.mem shortname_str type_conversion_functions then
+    try
+      (* Type the arguments to infer their types *)
+      let typed_arg_types = List.map (fun e -> snd (typing cenv h e)) e_list in
+      try_conversion_overload shortname_str typed_arg_types
+    with Not_found ->
+      (* Fallback to regular lookup *)
+      try
+        Modules.find_value f
+      with Not_found ->
+        error (Eundefined (fullname f))
+  else
+    (* Not an overloadable operator or conversion function, use regular lookup *)
+    try
+      Modules.find_value f
+    with Not_found ->
+      error (Eundefined (fullname f))
+
 and typing_app cenv h app e_list =
   match app.a_op with
     | Earrow ->
@@ -770,7 +919,7 @@ and typing_app cenv h app e_list =
         Tprod [], app, typed_e1::typed_e2::typed_format_args
 
     | (Efun f | Enode f) ->
-        let ty_desc = find_value f in
+        let ty_desc = resolve_operator_or_function f e_list cenv h in
         let op, expected_ty_list, result_ty_list = kind f ty_desc in
         let node_params = List.map (fun { p_name = n } -> local_qn n) ty_desc.node_params in
         let m = build_subst node_params app.a_params in

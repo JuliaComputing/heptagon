@@ -115,8 +115,16 @@ let is_stateful n =
 let rec ctype_of_otype oty =
   match oty with
     | Types.Tid id when id = Initial.pint -> Cty_int
+    | Types.Tid id when id = Initial.pint8 -> Cty_int8
+    | Types.Tid id when id = Initial.puint8 -> Cty_uint8
+    | Types.Tid id when id = Initial.pint16 -> Cty_int16
+    | Types.Tid id when id = Initial.puint16 -> Cty_uint16
+    | Types.Tid id when id = Initial.pint32 -> Cty_int32
+    | Types.Tid id when id = Initial.puint32 -> Cty_uint32
+    | Types.Tid id when id = Initial.pint64 -> Cty_int64
+    | Types.Tid id when id = Initial.puint64 -> Cty_uint64
     | Types.Tid id when id = Initial.pfloat -> Cty_float
-    | Types.Tid id when id = Initial.pbool -> Cty_int
+    | Types.Tid id when id = Initial.pbool -> Cty_int8
     | Tid id -> Cty_id id
     | Tarray(ty, n) -> Cty_arr(int_of_static_exp n, ctype_of_otype ty)
     | Tprod _ -> assert false
@@ -265,9 +273,34 @@ and create_affect_stm dest src ty =
           | _ -> [Caffect (dest, src)])
     | _ -> [Caffect (dest, src)]
 
+(** Wrap integer constant with appropriate stdint.h macro if needed *)
+let wrap_int_constant i se_ty =
+  match se_ty with
+  | Types.Tid id when id = Initial.pint64 ->
+      Cfun_call ("INT64_C", [Cconst (Ccint i)])
+  | Types.Tid id when id = Initial.puint64 ->
+      Cfun_call ("UINT64_C", [Cconst (Ccint i)])
+  | Types.Tid id when id = Initial.puint32 ->
+      Cfun_call ("UINT32_C", [Cconst (Ccint i)])
+  | Types.Tid id when id = Initial.pint32 ->
+      Cfun_call ("INT32_C", [Cconst (Ccint i)])
+  | Types.Tid id when id = Initial.puint16 ->
+      Cfun_call ("UINT16_C", [Cconst (Ccint i)])
+  | Types.Tid id when id = Initial.pint16 ->
+      Cfun_call ("INT16_C", [Cconst (Ccint i)])
+  | Types.Tid id when id = Initial.puint8 ->
+      Cfun_call ("UINT8_C", [Cconst (Ccint i)])
+  | Types.Tid id when id = Initial.pint8 ->
+      Cfun_call ("INT8_C", [Cconst (Ccint i)])
+  | Types.Tid id when id = Initial.pbool ->
+      Cfun_call ("INT8_C", [Cconst (Ccint i)])
+  | _ ->
+      (* Default: plain constant *)
+      Cconst (Ccint i)
+
 let rec cexpr_of_static_exp se =
   match se.se_desc with
-    | Sint i -> Cconst (Ccint i)
+    | Sint i -> wrap_int_constant i se.se_ty
     | Sfloat f -> Cconst (Ccfloat f)
     | Sbool b -> Cconst (Ctag (if b then "true" else "false"))
     | Sstring s -> Cconst (Cstrlit s)
@@ -870,7 +903,7 @@ let header_of_module m = match m with
   | _ -> String.uncapitalize_ascii (modul_to_string m)
 
 (* Header files included in all generated XXX_types.h headers.  *)
-let common_types_c_headers = ["stdbool"; "assert"; "pervasives"]
+let common_types_c_headers = ["stdint"; "inttypes"; "stdbool"; "assert"; "pervasives"]
 
 let global_file_header name prog =
   let dependencies = ModulSet.elements (Obc_utils.Deps.deps_program prog) in

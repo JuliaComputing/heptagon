@@ -32,6 +32,8 @@
 #ifndef DECADES_PERVASIVES_H
 #define DECADES_PERVASIVES_H
 
+#include <stdint.h>
+
 typedef float real;
 
 /* between(i, n) returns idx between 0 and n-1. */
@@ -40,6 +42,16 @@ static inline int between(int idx, int n)
   int o = (idx >= n) ? n-1 : (idx < 0 ? 0 : idx);
   return o;
 }
+
+/* Type conversion functions for sized integers */
+static inline int8_t int8(int x) { return (int8_t)x; }
+static inline uint8_t uint8(int x) { return (uint8_t)x; }
+static inline int16_t int16(int x) { return (int16_t)x; }
+static inline uint16_t uint16(int x) { return (uint16_t)x; }
+static inline int32_t int32(int x) { return (int32_t)x; }
+static inline uint32_t uint32(int x) { return (uint32_t)x; }
+static inline int64_t int64(int x) { return (int64_t)x; }
+static inline uint64_t uint64(int x) { return (uint64_t)x; }
 
 #endif
 

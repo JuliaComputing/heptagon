@@ -116,7 +116,15 @@ let main_def_of_class_def cd =
     | Tarray _ | Tprod _ | Tinvalid -> assert false
     | Types.Tid id when id = Initial.pfloat -> "%f"
     | Types.Tid id when id = Initial.pint -> "%d"
-    | Types.Tid id when id = Initial.pbool -> "%d"
+    | Types.Tid id when id = Initial.pint8 -> "%" ^ "PRId8"
+    | Types.Tid id when id = Initial.puint8 -> "%" ^ "PRIu8"
+    | Types.Tid id when id = Initial.pint16 -> "%" ^ "PRId16"
+    | Types.Tid id when id = Initial.puint16 -> "%" ^ "PRIu16"
+    | Types.Tid id when id = Initial.pint32 -> "%" ^ "PRId32"
+    | Types.Tid id when id = Initial.puint32 -> "%" ^ "PRIu32"
+    | Types.Tid id when id = Initial.pint64 -> "%" ^ "PRId64"
+    | Types.Tid id when id = Initial.puint64 -> "%" ^ "PRIu64"
+    | Types.Tid id when id = Initial.pbool -> "%" ^ "PRId8"
     | Tid _ -> "%s"
   in
 

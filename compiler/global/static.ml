@@ -137,6 +137,15 @@ let apply_op partial loc op se_list =
       | "&&&", [Sint n1; Sint n2] -> Sint (n1 land n2)
       | "|||", [Sint n1; Sint n2] -> Sint (n1 lor n2)
       | "%", [Sint n1; Sint n2] -> Sint (n1 mod n2)
+      (* Type conversion functions - just pass through the value *)
+      | "int8", [Sint n] -> Sint n
+      | "uint8", [Sint n] -> Sint n
+      | "int16", [Sint n] -> Sint n
+      | "uint16", [Sint n] -> Sint n
+      | "int32", [Sint n] -> Sint n
+      | "uint32", [Sint n] -> Sint n
+      | "int64", [Sint n] -> Sint n
+      | "uint64", [Sint n] -> Sint n
       | f,_ -> Misc.internal_error ("Static evaluation failed of the pervasive operator "^f)
   )
   else ( (* symbolic evaluation *)

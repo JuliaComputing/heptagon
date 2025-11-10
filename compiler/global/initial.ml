@@ -44,6 +44,22 @@ let pnot = { qual = Pervasives; name = "not" }
 let pimp = { qual = Pervasives; name = "=>" }
 let pint = { qual = Pervasives; name = "int" }
 let tint = Types.Tid pint
+let pint8 = { qual = Pervasives; name = "int8" }
+let tint8 = Types.Tid pint8
+let puint8 = { qual = Pervasives; name = "uint8" }
+let tuint8 = Types.Tid puint8
+let pint16 = { qual = Pervasives; name = "int16" }
+let tint16 = Types.Tid pint16
+let puint16 = { qual = Pervasives; name = "uint16" }
+let tuint16 = Types.Tid puint16
+let pint32 = { qual = Pervasives; name = "int32" }
+let tint32 = Types.Tid pint32
+let puint32 = { qual = Pervasives; name = "uint32" }
+let tuint32 = Types.Tid puint32
+let pint64 = { qual = Pervasives; name = "int64" }
+let tint64 = Types.Tid pint64
+let puint64 = { qual = Pervasives; name = "uint64" }
+let tuint64 = Types.Tid puint64
 let pfloat = { qual = Pervasives; name = "float" }
 let tfloat = Types.Tid pfloat
 let pstring = { qual = Pervasives; name = "string" }
