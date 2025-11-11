@@ -40,6 +40,7 @@ type uint32
 type int64
 type uint64
 type float
+type double
 type real = float
 type string
 external val fun (&)(bool;bool) returns (bool)
@@ -85,7 +86,7 @@ external val fun (=>)(bool;bool) returns (bool)
 external val fun exit(bool) returns ()
 external val fun assert(bool) returns ()
 
-(* Type conversion functions for sized integers *)
+(* Type conversion functions - these accept any numeric type via overloading *)
 external val fun int8(int) returns (int8)
 external val fun uint8(int) returns (uint8)
 external val fun int16(int) returns (int16)
@@ -94,3 +95,5 @@ external val fun int32(int) returns (int32)
 external val fun uint32(int) returns (uint32)
 external val fun int64(int) returns (int64)
 external val fun uint64(int) returns (uint64)
+external val fun float(int) returns (float)
+external val fun double(int) returns (double)

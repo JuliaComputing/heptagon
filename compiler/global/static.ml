@@ -139,13 +139,26 @@ let apply_op partial loc op se_list =
       | "%", [Sint n1; Sint n2] -> Sint (n1 mod n2)
       (* Type conversion functions - just pass through the value *)
       | "int8", [Sint n] -> Sint n
+      | "int8", [Sfloat f] -> Sint (int_of_float f)
       | "uint8", [Sint n] -> Sint n
+      | "uint8", [Sfloat f] -> Sint (int_of_float f)
       | "int16", [Sint n] -> Sint n
+      | "int16", [Sfloat f] -> Sint (int_of_float f)
       | "uint16", [Sint n] -> Sint n
+      | "uint16", [Sfloat f] -> Sint (int_of_float f)
       | "int32", [Sint n] -> Sint n
+      | "int32", [Sfloat f] -> Sint (int_of_float f)
       | "uint32", [Sint n] -> Sint n
+      | "uint32", [Sfloat f] -> Sint (int_of_float f)
       | "int64", [Sint n] -> Sint n
+      | "int64", [Sfloat f] -> Sint (int_of_float f)
       | "uint64", [Sint n] -> Sint n
+      | "uint64", [Sfloat f] -> Sint (int_of_float f)
+      (* Float/double conversions *)
+      | "float", [Sint n] -> Sfloat (float_of_int n)
+      | "float", [Sfloat f] -> Sfloat f
+      | "double", [Sint n] -> Sfloat (float_of_int n)
+      | "double", [Sfloat f] -> Sfloat f
       | f,_ -> Misc.internal_error ("Static evaluation failed of the pervasive operator "^f)
   )
   else ( (* symbolic evaluation *)

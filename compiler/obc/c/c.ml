@@ -70,6 +70,7 @@ type cty =
   | Cty_int64 (** 64-bit signed integer type (int64_t). *)
   | Cty_uint64 (** 64-bit unsigned integer type (uint64_t). *)
   | Cty_float (** C machine-dependent single-precision floating-point type. *)
+  | Cty_double (** C machine-dependent double-precision floating-point type. *)
   | Cty_char (** C character type. *)
   | Cty_id of qualname
   (** Previously defined C type, such as an enum or struct.*)
@@ -216,6 +217,7 @@ let rec pp_cty fmt cty = match cty with
   | Cty_int64 -> fprintf fmt "int64_t"
   | Cty_uint64 -> fprintf fmt "uint64_t"
   | Cty_float -> fprintf fmt "float"
+  | Cty_double -> fprintf fmt "double"
   | Cty_char -> fprintf fmt "char"
   | Cty_id s -> pp_qualname fmt s
   | Cty_ptr cty' -> fprintf fmt "%a*" pp_cty cty'

@@ -43,15 +43,18 @@ static inline int between(int idx, int n)
   return o;
 }
 
-/* Type conversion functions for sized integers */
-static inline int8_t int8(int x) { return (int8_t)x; }
-static inline uint8_t uint8(int x) { return (uint8_t)x; }
-static inline int16_t int16(int x) { return (int16_t)x; }
-static inline uint16_t uint16(int x) { return (uint16_t)x; }
-static inline int32_t int32(int x) { return (int32_t)x; }
-static inline uint32_t uint32(int x) { return (uint32_t)x; }
-static inline int64_t int64(int x) { return (int64_t)x; }
-static inline uint64_t uint64(int x) { return (uint64_t)x; }
+/* Type conversion macros for all numeric types */
+/* These use C's implicit conversion and casting rules to work with any numeric type */
+#define int8(x) ((int8_t)(x))
+#define uint8(x) ((uint8_t)(x))
+#define int16(x) ((int16_t)(x))
+#define uint16(x) ((uint16_t)(x))
+#define int32(x) ((int32_t)(x))
+#define uint32(x) ((uint32_t)(x))
+#define int64(x) ((int64_t)(x))
+#define uint64(x) ((uint64_t)(x))
+#define float(x) ((float)(x))
+#define double(x) ((double)(x))
 
 #endif
 

@@ -124,6 +124,7 @@ let rec ctype_of_otype oty =
     | Types.Tid id when id = Initial.pint64 -> Cty_int64
     | Types.Tid id when id = Initial.puint64 -> Cty_uint64
     | Types.Tid id when id = Initial.pfloat -> Cty_float
+    | Types.Tid id when id = Initial.pdouble -> Cty_double
     | Types.Tid id when id = Initial.pbool -> Cty_int8
     | Tid id -> Cty_id id
     | Tarray(ty, n) -> Cty_arr(int_of_static_exp n, ctype_of_otype ty)

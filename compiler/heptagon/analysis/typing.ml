@@ -285,14 +285,27 @@ let flatten_ty_list l =
 (** Operator overloading: maps operators to supported numeric types *)
 let overloadable_operators = ["+"; "-"; "*"; "/"; "%";
                               "="; "<="; "<"; ">="; ">";
-                              "&&&"; "|||"; ">>>"; "<<<"]
+                              "&&&"; "|||"; ">>>"; "<<<";
+                              "+."; "-."; "*."; "/.";
+                              "<."; "<=."; ">."; ">=."]
 
 let numeric_types = [
-  pint; pint8; puint8; pint16; puint16; pint32; puint32; pint64; puint64; pfloat
+  pint; pint8; puint8; pint16; puint16; pint32; puint32; pint64; puint64; pfloat; pdouble
 ]
 
 let is_comparison_op op =
   List.mem op ["="; "<="; "<"; ">="; ">"]
+
+let is_float_op op =
+  List.mem op ["+."; "-."; "*."; "/."; "<."; "<=."; ">."; ">=."]
+
+let is_float_comparison_op op =
+  List.mem op ["<."; "<=."; ">."; ">=."]
+
+let is_floating_type ty =
+  match unalias_type ty with
+  | Tid t -> t = pfloat || t = pdouble
+  | _ -> false
 
 let is_numeric_type ty =
   match unalias_type ty with
@@ -309,7 +322,12 @@ let try_operator_overload op_name arg_types =
   if List.length arg_types = 0 then raise Not_found;
 
   let first_ty = List.hd arg_types in
-  if not (is_numeric_type first_ty) then raise Not_found;
+
+  (* Float operators require floating-point types *)
+  if is_float_op op_name then
+    (if not (is_floating_type first_ty) then raise Not_found)
+  else
+    (if not (is_numeric_type first_ty) then raise Not_found);
 
   if not (List.for_all (fun ty ->
     match unalias_type first_ty, unalias_type ty with
@@ -319,7 +337,7 @@ let try_operator_overload op_name arg_types =
 
   (* Create synthetic signature *)
   let result_type =
-    if is_comparison_op op_name then tbool else first_ty
+    if is_comparison_op op_name || is_float_comparison_op op_name then tbool else first_ty
   in
 
   let mk_arg ty = {
@@ -342,7 +360,8 @@ let try_operator_overload op_name arg_types =
 
 (** Type conversion functions that accept any numeric type *)
 let type_conversion_functions = ["int8"; "uint8"; "int16"; "uint16";
-                                 "int32"; "uint32"; "int64"; "uint64"]
+                                 "int32"; "uint32"; "int64"; "uint64";
+                                 "float"; "double"]
 
 (** Try to resolve type conversion via overloading.
     Type conversion functions like int32() can accept any numeric type.
@@ -625,7 +644,18 @@ and typing_static_exp cenv se =
         let typed_se2 = expect_static_exp cenv t1 se2 in
         Sop (op, [typed_se1;typed_se2]), Tid Initial.pbool
     | Sop (op, se_list) ->
-        let ty_desc = find_value op in
+        (* Try conversion overloading for type conversion functions *)
+        let ty_desc =
+          if List.mem op.name type_conversion_functions then
+            try
+              (* Type arguments first to infer their types *)
+              let arg_types = List.map (fun se -> snd (typing_static_exp cenv se)) se_list in
+              try_conversion_overload op.name arg_types
+            with Not_found ->
+              find_value op
+          else
+            find_value op
+        in
         let typed_se_list = typing_static_args cenv
           (types_of_arg_list ty_desc.node_inputs) se_list
         in

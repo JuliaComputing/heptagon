@@ -62,6 +62,8 @@ let puint64 = { qual = Pervasives; name = "uint64" }
 let tuint64 = Types.Tid puint64
 let pfloat = { qual = Pervasives; name = "float" }
 let tfloat = Types.Tid pfloat
+let pdouble = { qual = Pervasives; name = "double" }
+let tdouble = Types.Tid pdouble
 let pstring = { qual = Pervasives; name = "string" }
 let tstring = Types.Tid pstring
 
