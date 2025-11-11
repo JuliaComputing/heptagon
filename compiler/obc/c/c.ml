@@ -98,6 +98,7 @@ and cexpr =
   | Cuop of string * cexpr (** Unary operator with its name. *)
   | Cbop of string * cexpr * cexpr (** Binary operator. *)
   | Cfun_call of string * cexpr list (** Function call with its parameters. *)
+  | Ccast of cty * cexpr (** Type cast ((type)expr). *)
   | Caddrof of cexpr (** Take the address of an expression. *)
   | Cstructlit of string * cexpr list (** Structure literal [{ f1, f2, ... }].*)
   | Carraylit of cexpr list (** Array literal [\[e1, e2, ...\]]. *)
@@ -285,6 +286,7 @@ and pp_cexpr fmt ce = match ce with
   | Cbop (s, l, r) -> fprintf fmt "(%a%s%a)" pp_cexpr l s pp_cexpr r
   | Cfun_call (s, el) ->
       fprintf fmt "%a(@[%a@])"  pp_string s  (pp_list1 pp_cexpr ",") el
+  | Ccast (ty, e) -> fprintf fmt "((%a)%a)" pp_cty ty pp_cexpr e
   | Caddrof (Cderef e) -> pp_cexpr fmt e
   | Cderef (Caddrof e) -> pp_cexpr fmt e
   | Caddrof e -> fprintf fmt "&%a" pp_cexpr e

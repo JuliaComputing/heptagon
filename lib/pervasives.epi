@@ -86,7 +86,8 @@ external val fun (=>)(bool;bool) returns (bool)
 external val fun exit(bool) returns ()
 external val fun assert(bool) returns ()
 
-(* Type conversion functions - these accept any numeric type via overloading *)
+(* Type conversion functions - these accept any numeric type via overloading
+   and are compiled to direct casts in the C backend *)
 external val fun int8(int) returns (int8)
 external val fun uint8(int) returns (uint8)
 external val fun int16(int) returns (int16)

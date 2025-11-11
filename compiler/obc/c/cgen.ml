@@ -165,6 +165,26 @@ let (has_native_c_op, native_c_op_of) =
   List.iter (fun (xl, y) -> List.iter (fun x -> Hashtbl.add ht x y) xl) assl;
   Hashtbl.mem ht, Hashtbl.find ht
 
+(** Map type conversion function names to their corresponding C types.
+
+    Type conversions in Heptagon (e.g., double(x), int32(y)) are compiled
+    to direct C casts (e.g., ((double)x), ((int32_t)y)) rather than function calls.
+    This avoids the need for conversion function definitions or macros in pervasives.h.
+
+    See also: typing.ml's type_conversion_functions and try_conversion_overload. *)
+let ctype_of_conversion_op op = match op with
+  | "int8" -> Some Cty_int8
+  | "uint8" -> Some Cty_uint8
+  | "int16" -> Some Cty_int16
+  | "uint16" -> Some Cty_uint16
+  | "int32" -> Some Cty_int32
+  | "uint32" -> Some Cty_uint32
+  | "int64" -> Some Cty_int64
+  | "uint64" -> Some Cty_uint64
+  | "float" -> Some Cty_float
+  | "double" -> Some Cty_double
+  | _ -> None
+
 let cformat_of_format s =
   let aux m = match m with
     | "b" -> "d" (*no booleans in C*)
@@ -365,6 +385,10 @@ and cop_of_op_aux op_name cexps = match op_name with
              Cuop (native_c_op_of uop, e)
           | bop, [el;er] when has_native_c_op op ->
              Cbop (native_c_op_of bop, el, er)
+          | op, [e] ->
+             (match ctype_of_conversion_op op with
+              | Some target_ty -> Ccast (target_ty, e)
+              | None -> Cfun_call (op, cexps))
           | _ ->
              Cfun_call (op, cexps)
         end

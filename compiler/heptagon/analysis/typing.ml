@@ -277,7 +277,8 @@ let flatten_ty_list l =
     - Keeps pervasives.epi concise with only base declarations
     - Allows operators to work with all numeric types
     - Enables type conversion syntax like int32(x) for any numeric x
-    - Generates efficient C code using native casts
+    - Generates efficient C code: operators use native C operators,
+      type conversions compile to direct casts like ((int32_t)x)
 
     The tradeoff is that these operators/functions are hardcoded in the compiler
     rather than being fully defined in the standard library. *)
@@ -366,6 +367,7 @@ let type_conversion_functions = ["int8"; "uint8"; "int16"; "uint16";
 (** Try to resolve type conversion via overloading.
     Type conversion functions like int32() can accept any numeric type.
     This is a special case in the type checker, similar to operator overloading.
+    In the C backend, these compile to direct casts: ((int32_t)x).
     Returns a synthetic signature: fn_name(any_numeric) -> target_type *)
 let try_conversion_overload fn_name arg_types =
   if not (List.mem fn_name type_conversion_functions) then
