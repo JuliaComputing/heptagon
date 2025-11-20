@@ -360,7 +360,7 @@ let try_operator_overload op_name arg_types =
   }
 
 (** Type conversion functions that accept any numeric type *)
-let type_conversion_functions = ["int8"; "uint8"; "int16"; "uint16";
+let type_conversion_functions = ["int"; "int8"; "uint8"; "int16"; "uint16";
                                  "int32"; "uint32"; "int64"; "uint64";
                                  "float"; "double"]
 

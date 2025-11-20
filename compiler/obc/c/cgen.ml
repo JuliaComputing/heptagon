@@ -173,6 +173,7 @@ let (has_native_c_op, native_c_op_of) =
 
     See also: typing.ml's type_conversion_functions and try_conversion_overload. *)
 let ctype_of_conversion_op op = match op with
+  | "int" -> Some Cty_int
   | "int8" -> Some Cty_int8
   | "uint8" -> Some Cty_uint8
   | "int16" -> Some Cty_int16
