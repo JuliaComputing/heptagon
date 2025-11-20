@@ -288,7 +288,8 @@ let overloadable_operators = ["+"; "-"; "*"; "/"; "%";
                               "="; "<="; "<"; ">="; ">";
                               "&&&"; "|||"; ">>>"; "<<<";
                               "+."; "-."; "*."; "/.";
-                              "<."; "<=."; ">."; ">=."]
+                              "<."; "<=."; ">."; ">=.";
+                              "~-"; "~-."; "~~"]
 
 let numeric_types = [
   pint; pint8; puint8; pint16; puint16; pint32; puint32; pint64; puint64; pfloat; pdouble
@@ -298,7 +299,7 @@ let is_comparison_op op =
   List.mem op ["="; "<="; "<"; ">="; ">"]
 
 let is_float_op op =
-  List.mem op ["+."; "-."; "*."; "/."; "<."; "<=."; ">."; ">=."]
+  List.mem op ["+."; "-."; "*."; "/."; "<."; "<=."; ">."; ">=."; "~-."]
 
 let is_float_comparison_op op =
   List.mem op ["<."; "<=."; ">."; ">=."]
@@ -646,13 +647,20 @@ and typing_static_exp cenv se =
         let typed_se2 = expect_static_exp cenv t1 se2 in
         Sop (op, [typed_se1;typed_se2]), Tid Initial.pbool
     | Sop (op, se_list) ->
-        (* Try conversion overloading for type conversion functions *)
+        (* Try conversion or operator overloading *)
         let ty_desc =
           if List.mem op.name type_conversion_functions then
             try
               (* Type arguments first to infer their types *)
               let arg_types = List.map (fun se -> snd (typing_static_exp cenv se)) se_list in
               try_conversion_overload op.name arg_types
+            with Not_found ->
+              find_value op
+          else if List.mem op.name overloadable_operators then
+            try
+              (* Type arguments first to infer their types *)
+              let arg_types = List.map (fun se -> snd (typing_static_exp cenv se)) se_list in
+              try_operator_overload op.name arg_types
             with Not_found ->
               find_value op
           else
