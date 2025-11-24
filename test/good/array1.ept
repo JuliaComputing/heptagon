@@ -48,6 +48,11 @@ let
   o = a[>i<][>j<];
 tel
 
+node elt_dyn_multi (a:int^m^m; i,j:int) returns (o : int)
+let
+  o = a.[i][j] default 0;
+tel
+
 node main() returns (i,j,r,o,o1 :int;t1:int^4)
 var x,y : int^10; z,t : int^20; r1,r2 :int^3;
 let

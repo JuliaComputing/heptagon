@@ -1030,9 +1030,9 @@ and typing_app cenv h app e_list =
     | Eselect_dyn ->
         let e1, defe, idx_list = assert_2min e_list in
         let typed_e1, t1 = typing cenv h e1 in
-        let typed_defe = expect cenv h (element_type t1) defe in
         let ty, typed_idx_list =
           typing_array_subscript_dyn cenv h idx_list t1 in
+        let typed_defe = expect cenv h ty defe in
         ty, app, typed_e1::typed_defe::typed_idx_list
 
     | Eselect_trunc ->
